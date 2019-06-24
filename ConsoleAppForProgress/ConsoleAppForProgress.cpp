@@ -17,9 +17,9 @@ int main()
 	Progress childProgress3(&mainProgress);
 	mainProgress.AddChild(&childProgress3);
 
-	//std::vector<std::string> fileNames = { "The_Hardkiss_Stones.mp3", "The_Hardkiss_Stones.mp3", "The_Hardkiss_Stones.mp3" };
+	std::vector<std::string> fileNames = { "The_Hardkiss_Stones.mp3", "The_Hardkiss_Stones.mp3", "The_Hardkiss_Stones.mp3" };
 
-	std::vector<std::string> fileNames = { "Odin_doma_3.avi", "Odin_doma_3.avi", "Odin_doma_3.avi" };
+	//std::vector<std::string> fileNames = { "Odin_doma_3.avi", "Odin_doma_3.avi", "Odin_doma_3.avi" };
 
 	CopyFiles(fileNames, &mainProgress);
 

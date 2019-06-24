@@ -1,11 +1,11 @@
 #include "stdafx.h"
 
 
-Progress::Progress(Progress* parent) : m_Parent(parent)
+Progress::Progress(Progress* parent) : m_parent(parent)
 {
 }
 
-bool Progress::AddObserver(IObserver* observer)
+bool Progress::AddObserver(IProgressObserver* observer)
 {
 	if (!observer)
 	{
@@ -13,11 +13,11 @@ bool Progress::AddObserver(IObserver* observer)
 		return false;
 	}
 
-	m_Observers.push_back(observer);
+	m_observers.push_back(observer);
 	return true;
 }
 
-bool Progress::RemoveObserver(IObserver* observer)
+bool Progress::RemoveObserver(IProgressObserver* observer)
 {
 	if (!observer)
 	{
@@ -25,28 +25,28 @@ bool Progress::RemoveObserver(IObserver* observer)
 		return false;
 	}
 
-	std::remove(m_Observers.begin(), m_Observers.end(), observer);
+	std::remove(m_observers.begin(), m_observers.end(), observer);
 
 	return true;
 }
 
 bool Progress::AddChild(Progress* childProgress)
 {
-	m_ChildProgresses.push_back(childProgress);
+	m_childProgresses.push_back(childProgress);
 
 	return true;
 }
 
 bool Progress::RemoveChild(Progress* childProgress)
 {
-	std::remove(m_ChildProgresses.begin(), m_ChildProgresses.end(), childProgress);
+	std::remove(m_childProgresses.begin(), m_childProgresses.end(), childProgress);
 
 	return true;
 }
 
 std::vector<Progress*> Progress::GetChildProgresses()
 {
-	return m_ChildProgresses;
+	return m_childProgresses;
 }
 
 bool Progress::SetProgressValue(int value)
@@ -57,11 +57,11 @@ bool Progress::SetProgressValue(int value)
 		return false;
 	}
 
-	m_CurrentValue = value;
+	m_currentValue = value;
 
-	if (m_Parent)
+	if (m_parent)
 	{
-		m_Parent->OnNotifyParent();
+		m_parent->OnNotifyParent();
 	}
 
 	return true;
@@ -75,21 +75,21 @@ bool Progress::SetEndProgressValue(int value)
 		return false;
 	}
 
-	m_EndValue = value;
+	m_endValue = value;
 
 	return true;
 }
 
 void Progress::Cancel(bool flag)
 {
-	m_Cancel = flag;
+	m_cancel = flag;
 }
 
 void Progress::OnNotifyObservers()
 {
-	for (unsigned int i = 0; i < m_Observers.size(); i++)
+	for (unsigned int i = 0; i < m_observers.size(); i++)
 	{
-		m_Observers[i]->OnValueChanged(this);
+		m_observers[i]->OnValueChanged(this);
 	}
 }
 
@@ -97,25 +97,25 @@ void Progress::OnNotifyParent()
 {
 	int result = 0;
 	int currentValue = 0;
-	for (unsigned int i = 0; i < m_ChildProgresses.size(); i++)
+	for (unsigned int i = 0; i < m_childProgresses.size(); i++)
 	{
-		result += CalculateProgress(m_ChildProgresses[i]->GetProgressValue(), this->GetEndProgressValue());
-		currentValue += m_ChildProgresses[i]->GetProgressValue();
+		result += CalculateProgress(m_childProgresses[i]->GetProgressValue(), this->GetEndProgressValue());
+		currentValue += m_childProgresses[i]->GetProgressValue();
 	}
-	m_PreviousPercentValue = m_CurrentPercentValue;
+	m_previousPercentValue = m_currentPercentValue;
 
-	m_CurrentValue = currentValue;
-	if (m_CurrentValue == m_EndValue)
+	m_currentValue = currentValue;
+	if (m_currentValue == m_endValue)
 	{
-		m_CurrentPercentValue = g_MaxPercents;
-		m_End = true;
+		m_currentPercentValue = g_maxPercents;
+		m_end = true;
 	}
 	else
 	{
-		m_CurrentPercentValue = result;
+		m_currentPercentValue = result;
 	}
 
-	if (m_PreviousPercentValue < m_CurrentPercentValue || m_End)
+	if (m_previousPercentValue < m_currentPercentValue || m_end)
 	{
 		OnNotifyObservers();
 	}
@@ -133,17 +133,17 @@ int Progress::CalculateProgress(int currentValue, int endValue)
 
 	if (endValue != 0)
 	{
-		result = currentValue * g_MaxPercents / endValue;
+		result = currentValue * g_maxPercents / endValue;
 	}
 
 	return result;
 }
 
-bool Progress::CalculateBlocksCount(std::vector<std::string> fileName)
+bool Progress::CalculateBlocksCount(const std::vector<std::string>& fileName)
 {
 	int result = 0, numOfBlocks = 0, additionalNumOfBytes = 0;
 
-	if (fileName.size() != m_ChildProgresses.size())
+	if (fileName.size() != m_childProgresses.size())
 	{
 		std::cout << "Error! The number of files does not equal the number of child progresses." << std::endl;
 		return false;
@@ -163,21 +163,21 @@ bool Progress::CalculateBlocksCount(std::vector<std::string> fileName)
 		if (additionalNumOfBytes > 0)
 			numOfBlocks += 1;
 
-		m_ChildProgresses[i]->m_EndValue = numOfBlocks;
+		m_childProgresses[i]->m_endValue = numOfBlocks;
 		result += numOfBlocks;
 		numOfBlocks = additionalNumOfBytes = 0;
 
 		fin.close();
 	}
 
-	m_EndValue = result;
+	m_endValue = result;
 
 	return true;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool CopyFiles(std::vector<std::string> fileName, Progress* progress)
+bool CopyFiles(const std::vector<std::string>& fileName, Progress* progress)
 {
 	if (!progress)
 	{
@@ -192,9 +192,9 @@ bool CopyFiles(std::vector<std::string> fileName, Progress* progress)
 	}
 
 	int tmp = 0;
-	char buf[g_BlockSize] = "";
+	char buf[g_blockSize] = "";
 	int numOfBlocks = 0, additionalNumOfBytes = 0;
-	char fileNameForOutput[256] = " .avi";
+	char fileNameForOutput[256] = " .mp3";
 
 	std::vector<Progress*> childOfMainProgress = progress->GetChildProgresses();
 	char letter = 'a';
@@ -224,7 +224,7 @@ bool CopyFiles(std::vector<std::string> fileName, Progress* progress)
 
 		while (tmp < numOfBlocks && !progress->IsCancelled())
 		{
-			fin.seekg(tmp * g_BlockSize, std::ios::beg);
+			fin.seekg(tmp * g_blockSize, std::ios::beg);
 
 			if (tmp == numOfBlocks - 1 && additionalNumOfBytes > 0)
 			{
@@ -233,8 +233,8 @@ bool CopyFiles(std::vector<std::string> fileName, Progress* progress)
 			}
 			else
 			{
-				fin.read(buf, g_BlockSize);
-				fout.write(buf, g_BlockSize);
+				fin.read(buf, g_blockSize);
+				fout.write(buf, g_blockSize);
 			}
 			tmp++;
 
@@ -266,8 +266,8 @@ bool GetFileSize(std::ifstream& f, int& numOfBlocks, int& additionalNumOfBytes)
 	}
 
 	f.seekg(0, std::ios::end);
-	numOfBlocks = f.tellg() / g_BlockSize;
-	additionalNumOfBytes = f.tellg() % g_BlockSize;
+	numOfBlocks = f.tellg() / g_blockSize;
+	additionalNumOfBytes = f.tellg() % g_blockSize;
 	f.seekg(0, std::ios::beg);
 
 	return true;
@@ -277,24 +277,24 @@ bool GetFileSize(std::ifstream& f, int& numOfBlocks, int& additionalNumOfBytes)
 
 void ProgressObserver::OnValueChanged(Progress* progress)
 {
-	m_CurrentState = progress->GetProgressPercentValue();
+	m_currentState = progress->GetProgressPercentValue();
 
 	ShowProgress(progress);
 }
 
 void ProgressObserver::ShowProgress(Progress* progress)
 {
-	if (m_Flag)
+	if (m_flag)
 	{
 		char key;
 		std::cout << "Do you want to cancel the progress? If yes - press 'q', else - press any other key." << std::endl;
 		std::cin >> key;
 		if (key == 'q')
 			progress->Cancel(true);
-		m_Flag = false;
+		m_flag = false;
 	}
 
-	std::cout << m_CurrentState << "% ... ";
+	std::cout << m_currentState << "% ... ";
 
 	if (progress->IsCancelled())
 	{
